@@ -26,3 +26,8 @@ class User(BaseModel):
             raise ValueError('Password must be less than 72 bytes long')
 
         return v.strip()
+
+class UserResponse(BaseModel):
+    email: str
+    access_token: str
+    token_type: str

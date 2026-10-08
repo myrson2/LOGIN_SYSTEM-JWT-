@@ -54,7 +54,37 @@ def login():
     email = input("Email: ")
     password = getpass("Password: ")
 
-    print(f"\nLogging in as {email}...")
+    user = User(
+        email=email,
+        password=password
+    )
+
+    print(f"\nLogging in as {user.email}...")
+
+    try:
+        response = httpx.post(
+            "http://127.0.0.1:8011/user/login",
+            data={"username": user.email, "password": user.password}
+        )
+
+        if response.status_code == 200:
+            print("\nLogin successful!")
+            print(response.json())
+        else:
+            print(f"\nLogin failed.")
+            print(f"Status code: {response.status_code}")
+
+            try:
+                print("Error:", response.json())
+            except ValueError:
+                print("Error:", response.text)
+
+    except httpx.ConnectError:
+        print("\nCould not connect to the server.")
+        print("Make sure your FastAPI server is running.")
+
+    except httpx.RequestError as e:
+        print(f"\nRequest failed: {e}")
 
 
 def menu():
