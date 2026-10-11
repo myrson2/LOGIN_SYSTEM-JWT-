@@ -6,16 +6,46 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from authen_authori.usermodel import UserModel, get_db
-from authen_authori.userschema import User, UserResponse
-from authen_authori.security import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from authen_authori.userschema import User, UserResponse, UserProfileResponse
+from authen_authori.security import (
+    get_password_hash,
+    verify_password,
+    create_access_token,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    oauth2_scheme,
+    get_current_user,
+    require_role,
+)
 
 router = APIRouter(prefix="/user", tags=["authen"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="user/login")
+@router.get("/me", response_model=UserProfileResponse)
+def read_current_user(current_user: UserModel = Depends(get_current_user)):
+    return current_user
 
-@router.get("/")
-def read_root(token: str = Depends(oauth2_scheme)):
-    return {"message": "You are authenticated!", "token": token}
+@router.get("/student/grades")
+def view_student_grades(student: UserModel = Depends(require_role("student"))):
+    return {
+        "message": f"Welcome Student {student.email}!",
+        "courses": [
+            {"subject": "Mathematics", "grade": "A"},
+            {"subject": "Computer Science", "grade": "A+"}
+        ]
+    }
+
+@router.get("/teacher/portal")
+def view_teacher_portal(teacher: UserModel = Depends(require_role("teacher"))):
+    return {
+        "message": f"Welcome Teacher {teacher.email}!",
+        "controls": "Full access to grade submissions and syllabus editing."
+    }
+
+@router.get("/admin/dashboard")
+def admin_dashboard(admin: UserModel = Depends(require_role("admin"))):
+    return {
+        "message": f"Welcome Admin {admin.email}! Access granted to sensitive resources.",
+        "admin_id": admin.id
+    }
 
 @router.post('/register', status_code=status.HTTP_201_CREATED)
 async def register_user(users: User, db: Session = Depends(get_db)) -> dict:
@@ -25,12 +55,12 @@ async def register_user(users: User, db: Session = Depends(get_db)) -> dict:
         raise HTTPException(status_code=400, detail="Email already registered")
         
     hashed_password = get_password_hash(users.password)
-    user = UserModel(email=users.email, password=hashed_password)
+    user = UserModel(email=users.email, password=hashed_password, role=users.role)
 
     db.add(user)
     db.commit()
     db.refresh(user) # Refresh to get the generated ID
-    return { "email": user.email, "id": user.id }
+    return { "email": user.email, "id": user.id, "role": user.role }
 
 
 @router.post('/login', status_code=status.HTTP_200_OK, response_model=UserResponse)

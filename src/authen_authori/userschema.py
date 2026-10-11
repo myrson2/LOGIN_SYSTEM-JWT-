@@ -4,6 +4,7 @@ from pydantic import BaseModel, ValidationError, field_validator
 class User(BaseModel):
     email: str
     password: str
+    role: str = "user"
 
     @field_validator('email')
     @classmethod
@@ -31,3 +32,9 @@ class UserResponse(BaseModel):
     email: str
     access_token: str
     token_type: str
+
+class UserProfileResponse(BaseModel):
+    id: int
+    email: str
+    role: str
+

@@ -23,6 +23,7 @@ class UserModel(Base):
     id: Mapped[int] = mapped_column( primary_key=True)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     password: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String, default="user", nullable=False)
 
 def create_tables() -> None:
     Base.metadata.create_all(engine)
